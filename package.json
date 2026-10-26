@@ -1,6 +1,6 @@
 {
   "name": "dsh-opencode-go-x-session",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Adds OpenCode Go's required x-opencode-session header to model requests of the configured OpenCode routes (including auto-review and hand-declared routes), with a live on/off switch.",
   "author": "pengpenglele",
   "repository": {
