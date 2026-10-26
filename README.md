@@ -1,5 +1,9 @@
 # dsh-opencode-go-x-session
 
+[![npm version](https://img.shields.io/npm/v/dsh-opencode-go-x-session.svg)](https://www.npmjs.com/package/dsh-opencode-go-x-session)
+[![npm downloads](https://img.shields.io/npm/dm/dsh-opencode-go-x-session.svg)](https://www.npmjs.com/package/dsh-opencode-go-x-session)
+[![license](https://img.shields.io/npm/l/dsh-opencode-go-x-session.svg)](./LICENSE)
+
 Host-only DeepSeek Harness bundle that adds OpenCode Go's required
 `x-opencode-session` request header to the model requests of the configured
 OpenCode provider routes, and nowhere else.

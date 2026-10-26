@@ -1,5 +1,9 @@
 # dsh-opencode-go-x-session（OpenCode 会话头注入）
 
+[![npm version](https://img.shields.io/npm/v/dsh-opencode-go-x-session.svg)](https://www.npmjs.com/package/dsh-opencode-go-x-session)
+[![npm downloads](https://img.shields.io/npm/dm/dsh-opencode-go-x-session.svg)](https://www.npmjs.com/package/dsh-opencode-go-x-session)
+[![license](https://img.shields.io/npm/l/dsh-opencode-go-x-session.svg)](./LICENSE)
+
 Host-only 的 DeepSeek Harness 插件：为配置的 OpenCode provider 路由上的模型请求补上
 OpenCode Go 必需的 `x-opencode-session` 头，其他路由、其他主机、其他 provider 一概不碰。
 
