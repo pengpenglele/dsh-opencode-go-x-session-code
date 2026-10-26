@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "OpenCode 会话头注入",
+    "description": "为配置的 OpenCode 路由上的模型请求补上 OpenCode Go 必需的 x-opencode-session 头（含自动审查与手写路由），并带实时开关。"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "@local/dsh-opencode-session-header",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Adds OpenCode Go's required x-opencode-session header to model requests of the configured OpenCode routes (including auto-review and hand-declared routes), with a live on/off switch.",
+  "author": "pengpenglele",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pengpenglele/dsh-opencode-go-x-session-code.git"
+  },
+  "homepage": "https://github.com/pengpenglele/dsh-opencode-go-x-session-code#readme",
+  "bugs": {
+    "url": "https://github.com/pengpenglele/dsh-opencode-go-x-session-code/issues"
+  },
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README.zh.md"
+  ],
+  "icon": "./icon.svg",
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.1-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5"
+  },
+  "scripts": {
+    "test": "node test/plugin.test.mjs"
+  },
+  "license": "MIT"
+}

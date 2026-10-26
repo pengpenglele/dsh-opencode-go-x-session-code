@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "OpenCode Session Header",
+    "description": "Adds OpenCode Go's required x-opencode-session header to model requests on the configured OpenCode routes (including auto-review and hand-declared routes), with a live on/off switch."
+  }
+}

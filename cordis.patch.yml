@@ -1,0 +1,21 @@
+# Mount the OpenCode session-header plugin on the Host plane.
+#
+# This row is the plugin's identity and its default settings; the same fields
+# are served as the plugin's settings page (`enabled` is the unified switch).
+# Only the routes named in `providers` are ever touched, and only requests to
+# the hosts named in `hosts` can receive the header.
+#
+# `opencode-go*` is one trailing-`*` prefix pattern: it covers the `opencode-go`
+# catalog route and every hand-declared `opencode-go-*` variant, so a newly
+# added variant needs no config change here.
+- insert:
+    - id: opencode-session-header
+      name: '@local/dsh-opencode-session-header'
+      config:
+        enabled: true
+        providers:
+          - 'opencode-go*'
+        hosts:
+          - opencode.ai
+        fallbackSessionId: dsh-auto-review
+        debug: false
