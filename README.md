@@ -1,4 +1,4 @@
-# @local/dsh-opencode-session-header
+# dsh-opencode-go-x-session
 
 Host-only DeepSeek Harness bundle that adds OpenCode Go's required
 `x-opencode-session` request header to the model requests of the configured
@@ -89,18 +89,27 @@ inserted row in the profile's `cordis.patch.yml`:
 
 ## Install
 
+From npm (recommended):
+
+```sh
+dsh plugin --profile desktop add dsh-opencode-go-x-session
+```
+
+From this repository — clone it, then install the directory as a bundle through
+the Harness plugin manager (Web: Plugins → Install bundle; tool:
+`install_bundle` with this directory's absolute path as the target):
+
 ```sh
 git clone https://github.com/pengpenglele/dsh-opencode-go-x-session-code.git
 ```
 
-Install the directory as a bundle through the Harness plugin manager (Web:
-Plugins → Install bundle; tool: `install_bundle` with this directory's absolute
-path as the target). The bundle patch inserts one Host row,
-`opencode-session-header`; the change applies to every session in the profile.
+Either way the bundle patch inserts one Host row, `opencode-session-header`; the
+change applies to every session in the profile.
 
-The package directory needs its own `node_modules` for the `schemastery`
-dependency (`pnpm install --ignore-workspace` in this directory) because a
-`link:` installation resolves the plugin's dependencies from its real path.
+For a `link:`/local installation the package directory needs its own
+`node_modules` for the `schemastery` dependency (`pnpm install
+--ignore-workspace` in this directory), because a `link:` installation resolves
+the plugin's dependencies from its real path.
 
 ## Turning it off (three equivalent ways)
 

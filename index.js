@@ -1,5 +1,5 @@
 /**
- * dsh-opencode-session-header — Host-only Harness plugin.
+ * dsh-opencode-go-x-session — Host-only Harness plugin.
  *
  * OpenCode Go / Zen requires the `x-opencode-session` request header: a stable
  * identifier for one conversation, used for routing and prompt-cache affinity.
@@ -55,7 +55,7 @@
  *                               anywhere (default: dsh-auto-review)
  *   debug             boolean   log every injection (default: false)
  *
- * @module dsh-opencode-session-header
+ * @module dsh-opencode-go-x-session
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks'
@@ -351,7 +351,7 @@ export function addSessionHeader(input, init, store) {
  */
 function acquireFetchPatch(state) {
   if (typeof globalThis.fetch !== 'function') {
-    throw new Error('dsh-opencode-session-header: globalThis.fetch is unavailable')
+    throw new Error('dsh-opencode-go-x-session: globalThis.fetch is unavailable')
   }
   if (state.refs === 0) {
     state.original = globalThis.fetch

@@ -1,4 +1,4 @@
-# @local/dsh-opencode-session-header（OpenCode 会话头注入）
+# dsh-opencode-go-x-session（OpenCode 会话头注入）
 
 Host-only 的 DeepSeek Harness 插件：为配置的 OpenCode provider 路由上的模型请求补上
 OpenCode Go 必需的 `x-opencode-session` 头，其他路由、其他主机、其他 provider 一概不碰。
@@ -73,15 +73,23 @@ OpenCode Go / Zen 要求每个推理请求携带 `x-opencode-session`（一条�
 
 ## 安装
 
+从 npm 安装（推荐）：
+
+```sh
+dsh plugin --profile desktop add dsh-opencode-go-x-session
+```
+
+或从本仓库安装：先 clone，再用 Harness 插件管理器安装本目录（Web：插件 → 安装 bundle；
+工具：`install_bundle`，target 为本目录绝对路径）。
+
 ```sh
 git clone https://github.com/pengpenglele/dsh-opencode-go-x-session-code.git
 ```
 
-用 Harness 插件管理器安装本目录（Web：插件 → 安装 bundle；工具：`install_bundle`，target
-为本目录绝对路径）。bundle patch 会插入一行 Host 插件 `opencode-session-header`，对
-profile 下所有会话生效。
+两种方式都会由 bundle patch 插入一行 Host 插件 `opencode-session-header`，对 profile
+下所有会话生效。
 
-由于是按 `link:` 安装，插件依赖从本目录真实路径解析；先在本目录执行
+按 `link:` / 本地目录安装时，插件依赖从本目录真实路径解析；先在本目录执行
 `pnpm install --ignore-workspace` 安装 `schemastery` 依赖。
 
 ## 关闭插件（三种等价方式）

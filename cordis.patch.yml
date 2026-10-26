@@ -10,7 +10,7 @@
 # added variant needs no config change here.
 - insert:
     - id: opencode-session-header
-      name: '@local/dsh-opencode-session-header'
+      name: 'dsh-opencode-go-x-session'
       config:
         enabled: true
         providers:
