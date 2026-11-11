@@ -8,17 +8,26 @@
  *
  * Inside DSH two request shapes reach OpenCode without the header:
  *
- * 1. **Auto-review / other hand-built calls.** pi-ai's catalog provider
+ * 1. **Auto-review / session-less calls.** pi-ai's catalog provider
  *    (`opencode-go`) adds the header from `GenerateOptions.sessionId`, and
- *    `dsh-llm-pi-ai` forwards that field. The auto-review reviewer calls
- *    `ctx.llm.stream()` with no `sessionId`, so the header is missing and the
- *    review fails closed (`Auto review of tool "..." failed`).
+ *    `dsh-llm-pi-ai` forwards that field. The auto-review reviewer used to call
+ *    `ctx.llm.stream()` with no `sessionId` (through DSH 0.2.2-alpha.2), so the
+ *    header was missing and the review failed closed
+ *    (`Auto review of tool "..." failed`); 0.2.2-alpha.3 passes `sessionId`, but
+ *    third-party plugins and background tasks can still issue session-less
+ *    calls and hit the same wall.
  * 2. **Hand-declared OpenCode routes.** A route such as
  *    `opencode-go-audit-free-none` — a provider key pi-ai's installed catalog
  *    does not ship, or one that spells out `api`/`baseURL` — is built by
  *    `dsh-llm-pi-ai` itself over the plain protocol implementation, which never
  *    applies pi-ai's OpenCode session-header wrapper. Even its ordinary
  *    main-model requests lack the header.
+ *
+ * Either way the gateway answers `400 {"type":"MissingSessionID"}` and whatever
+ * feature issued the request stops working — auto review (fail closed: the
+ * reviewed tool call never executes), the whole hand-declared route (main
+ * conversation, compaction, session titles), or the auxiliary feature behind a
+ * session-less call.
  *
  * This plugin adds that missing header, and only for the provider routes named
  * in its config and the request hosts named in its config. It does not touch

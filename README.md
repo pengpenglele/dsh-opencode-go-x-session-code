@@ -6,12 +6,13 @@
 
 [中文文档](./README.zh.md) · English
 
-A host-only [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that adds
-OpenCode Go's required `x-opencode-session` request header to model requests on
-the configured OpenCode provider routes — including the requests the official
-auto-review feature builds by hand — and to no other route or host.
+A host-only [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that
+restores the DSH features that break on OpenCode Go routes because their model requests
+lack the required `x-opencode-session` header — auto review, hand-declared routes, and
+session-less auxiliary calls — by adding that header to exactly the configured routes
+and hosts.
 
-## Do you need it?
+## What it fixes: features that become unavailable
 
 OpenCode Go / Zen requires every inference request to carry
 `x-opencode-session`: a stable identifier per conversation, used for routing and
@@ -21,17 +22,31 @@ prompt-cache affinity. Since 2026-09-05 requests without it are rejected:
 400 {"type":"MissingSessionID","message":"... Request is missing x-opencode-session ..."}
 ```
 
-Install this plugin if you see either of these inside DSH:
+DSH adds the header on only one shape of request: a pi-ai **catalog** route
+(`opencode-go`, with no `api`/`baseURL` override) whose request carries a
+`sessionId`. Everything else goes out without it, and the gateway has no
+fallback — so the symptom is not "a missing header", it is **the feature that
+made the call simply not working**:
 
-- `400 MissingSessionID` on an `opencode-go` / `opencode-go-*` route, or
-- `Auto review of tool "..." failed` when the reviewed session uses an OpenCode Go
-  route (the reviewer call carries no `sessionId`, so pi-ai's own OpenCode
-  wrapper has nothing to write).
+| What breaks | What you see | Why the header is missing | How this plugin covers it |
+|---|---|---|---|
+| **Auto review** (the Auto permission preset; DSH <= 0.2.2-alpha.2) | The reviewer request gets `400` → the review fails → the reviewed tool call is **never executed** (fail closed) and reports `Auto review of tool "<name>" failed; its body was not executed`. In practice: turn Auto review on and every tool call stops working. | That DSH version builds the reviewer request without `sessionId`, so pi-ai's OpenCode wrapper has no value to write. | Resolves the reviewed conversation's id through `ctx.agents.currentInitiator()`. |
+| **Hand-declared OpenCode Go routes** (`opencode-go-*` with `api` or `baseURL` set, including an `opencode-go` route that overrides the catalog protocol) | Every request on that route gets `400`: main conversation, auto review, compaction, session titles — the whole route is unusable. | `dsh-llm-pi-ai` builds these routes on the plain protocol implementation, so pi-ai's OpenCode wrapper never runs — even a request carrying a `sessionId` gets no header. | Adds the header in the transport layer (`globalThis.fetch`), which both paths actually use. |
+| **Session-less auxiliary calls** (a third-party plugin or background task calling `ctx.llm.stream()` without a `sessionId`) | The request gets `400`; that feature fails silently or with an error. | The caller has no conversation to take an id from. | Falls back to the configured `fallbackSessionId`, so the call still goes out under one stable affinity id. |
 
-DSH sends the header natively only on pi-ai catalog requests that carry a
-`sessionId`. Auto-review calls and hand-declared routes
-(`opencode-go-free-none`, `opencode-go-audit-free-none`, custom keys) lack it.
-This plugin fills that gap at the transport layer both paths actually use.
+Two DSH features are **not** affected on a catalog route: context **compaction**
+(`purpose: 'compaction'`) and **session-title generation**
+(`purpose: 'session-title'`) have carried `sessionId` since DSH 0.2.1-rc.2, so
+DSH already sends the header for them. They only break on a hand-declared route
+(the middle row).
+
+> DSH 0.2.2-alpha.3 started passing `sessionId` on the auto-review request too,
+> so on a catalog route the first row no longer needs this plugin there. The
+> other two rows are unaffected by that change.
+
+The plugin only touches requests that match the configured `providers` and
+`hosts` and carry no header yet; every other request is passed through
+unchanged.
 
 ## Requirements
 
@@ -138,9 +153,10 @@ without a restart.
    [opencode-session-header] x-opencode-session: <session-id> -> <url>
    ```
 
-3. The original symptom disappears: no more `400 MissingSessionID`, and
-   auto-review on an OpenCode Go model no longer fails with
-   `Auto review of tool "..." failed`.
+3. The original symptom disappears: no more `400 MissingSessionID`; auto review
+   on an OpenCode Go model no longer fails with
+   `Auto review of tool "..." failed`; and a hand-declared `opencode-go-*` route
+   goes back to working for the main conversation, compaction and session titles.
 
 ## Disable / uninstall
 
@@ -200,6 +216,9 @@ no transcript entry.
 - Calls with no session context share the stable `fallbackSessionId`. That keeps
   them working, but those calls share one affinity id rather than one per
   conversation.
+- DSH 0.2.2-alpha.3 and later pass `sessionId` on the auto-review request
+  natively, so on a catalog route that feature no longer needs this plugin.
+  Hand-declared routes and session-less calls still do.
 
 ## Development
 

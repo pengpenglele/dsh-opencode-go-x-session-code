@@ -6,29 +6,37 @@
 
 中文 · [English](./README.md)
 
-Host-only 的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件：为配置的
-OpenCode provider 路由上的模型请求补上 OpenCode Go 必需的 `x-opencode-session` 头——包括官方
-**自动审查**功能手写的审查请求——其他路由、其他主机、其他 provider 一概不碰。
+Host-only 的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件：把
+OpenCode Go 路由上那些因为缺 `x-opencode-session` 头而**直接不可用的功能**修回来——自动审查、
+手写路由、没有会话上下文的辅助调用——补头范围严格限定在配置的路由和主机内。
 
-## 你是否需要它
+## 它修的是什么：哪些功能会因此不可用
 
 OpenCode Go / Zen 要求每个推理请求携带 `x-opencode-session`（一条会话一个稳定标识，用于路由
-与提示词缓存亲和）。自 2026-09-05 起，缺这个头的请求会被拒绝：
+与提示词缓存亲和）。自 2026-09-05 起，缺这个头的请求会被网关直接拒绝：
 
 ```
 400 {"type":"MissingSessionID","message":"... Request is missing x-opencode-session ..."}
 ```
 
-在 DSH 里遇到下面任一情况，就该装这个插件：
+DSH 只会在一种请求上自己带这个头：**pi-ai 目录路由**（内置 `opencode-go`，配置里没有另外写
+`api`/`baseURL`）上带了 `sessionId` 的请求。其余请求都不会带，而网关没有任何降级——所以症状
+不是"少一个头"，而是**发起调用的那个功能直接不可用**：
 
-- 走 `opencode-go` / `opencode-go-*` 路由时报 `400 MissingSessionID`；
-- 被审查的会话用的是 OpenCode Go 路由时，工具调用报
-  `Auto review of tool "..." failed`（审查器调用不带 `sessionId`，pi-ai 自带的 OpenCode 包装
-  没有值可写）。
+| 会坏的功能 | 你会看到什么 | 为什么这次调用没有头 | 本插件怎么覆盖 |
+|---|---|---|---|
+| **自动审查**（Auto 权限预设；DSH <= 0.2.2-alpha.2） | reviewer 请求 400 → 审查失败 → 被审查的工具调用**不会执行**（fail-closed），报 `Auto review of tool "<name>" failed; its body was not executed`。实际感受就是：开了自动审查，所有工具调用都用不了。 | 那个版本的 DSH 拼 reviewer 请求时没带 `sessionId`，pi-ai 的 OpenCode 包装没有值可写。 | 通过 `ctx.agents.currentInitiator()` 拿到被审查会话的 id。 |
+| **手写 / 自定义 OpenCode Go 路由**（`opencode-go-*`，配置里写了 `api` 或 `baseURL`；也包括把内置 `opencode-go` 的协议覆盖掉的情况） | 这条路由上**所有**请求都 400：主对话、自动审查、上下文压缩、会话标题全部不可用，整条路由等于废的。 | `dsh-llm-pi-ai` 对手写路由用普通协议实现拼请求，根本不经过 pi-ai 的 OpenCode 包装；哪怕请求带了 `sessionId` 也不会加头。 | 在两条路径都会经过的传输层（`globalThis.fetch`）统一补头。 |
+| **没有会话上下文的辅助调用**（第三方插件或后台任务直接调 `ctx.llm.stream()` 且不带 `sessionId`） | 请求 400，对应功能静默失败或报错。 | 调用方本来就没有会话 id 可取。 | 退到配置的 `fallbackSessionId`，让调用能发出去并共享一个稳定亲和 id。 |
 
-DSH 只会在**带 `sessionId` 的 pi-ai 目录路由请求**上原生发送这个头。自动审查的调用和手写的
-路由（`opencode-go-free-none`、`opencode-go-audit-free-none`、自定义 key）都没有它。本插件在
-两条路径实际都经过的传输层补上这个缺口。
+在目录路由上**不受影响**的两项：上下文**压缩**（`purpose: 'compaction'`）和**会话标题生成**
+（`purpose: 'session-title'`）从 DSH 0.2.1-rc.2 起就自带 `sessionId`，DSH 自己会补头；只有它们
+跑在手写路由上时才会坏（上表第二行）。
+
+> DSH 0.2.2-alpha.3 起，自动审查请求也原生带上 `sessionId` 了；用内置目录路由的 DSH 更新到
+> 这个版本后，上表第一行不再需要本插件。第二、三行不受影响，仍然需要。
+
+插件只加工命中 `providers`、主机在 `hosts` 内、并且还没有这个头的请求；其余请求原样放行。
 
 ## 前置条件
 
@@ -124,7 +132,8 @@ profile 下所有会话生效。
    ```
 
 3. 原来的症状消失：不再有 `400 MissingSessionID`；自动审查工具调用不再报
-   `Auto review of tool "..." failed`。
+   `Auto review of tool "..." failed`；手写 `opencode-go-*` 路由上的主对话、压缩、会话标题
+   也恢复可用。
 
 ## 关闭 / 卸载
 
@@ -173,6 +182,8 @@ profile 下所有会话生效。
 - 路由自身的凭据（`apiKeyEnv`）与 `baseURL` 仍由路由配置负责；本插件只补头。
 - 完全拿不到会话上下文的调用会共用 `fallbackSessionId`：能正常发出去，但这些调用共享一个
   亲和 id，而不是各自一条会话。
+- DSH 0.2.2-alpha.3 起自动审查请求原生带 `sessionId`；在目录路由上这一项不再需要本插件，
+  手写路由和无会话调用仍然需要。
 
 ## 开发
 
